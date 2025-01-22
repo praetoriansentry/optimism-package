@@ -324,6 +324,20 @@ optimism_package:
         # Defaults to True
         fund_dev_accounts: true
 
+        # Preloaded contracts for the chain
+        additional_preloaded_contracts: {}
+        # Example:
+        # additional_preloaded_contracts: '{
+        #  "0x123463a4B065722E99115D6c222f267d9cABb524":
+        #   {
+        #     balance: "1ETH",
+        #     code: "0x1234",
+        #     storage: {},
+        #     nonce: 0,
+        #     secretKey: "0x",
+        #   }
+        # }'
+
       # Default batcher configuration
       batcher_params:
         # The Docker image that should be used for the batcher; leave blank to use the default op-batcher image

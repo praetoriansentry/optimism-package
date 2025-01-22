@@ -231,6 +231,24 @@ def deploy_contracts(plan, priv_key, l1_config_env_vars, optimism_args, l1_netwo
     apply_cmds = [
         "op-deployer apply --l1-rpc-url $L1_RPC_URL --private-key $PRIVATE_KEY --workdir /network-data",
     ]
+    op_deployer_output = plan.run_sh(
+        name="op-deployer-apply",
+        description="Apply L2 contract deployments",
+        image=optimism_args.op_contract_deployer_params.image,
+        env_vars={"PRIVATE_KEY": str(priv_key)} | l1_config_env_vars,
+        store=[
+            StoreSpec(
+                src="/network-data",
+                name="op-deployer-configs",
+            )
+        ],
+        files={
+            "/network-data": op_deployer_configure.files_artifacts[0],
+        },
+        run=" && ".join(apply_cmds),
+    )
+
+    apply_cmds = []
     for chain in optimism_args.chains:
         network_id = chain.network_params.network_id
         apply_cmds.extend(
@@ -243,6 +261,35 @@ def deploy_contracts(plan, priv_key, l1_config_env_vars, optimism_args, l1_netwo
                 ),
             ]
         )
+
+    for chain in optimism_args.chains:
+        idx = 0
+        if len(chain.network_params.additional_preloaded_contracts) > 0:
+            alloc_cmds = [
+                "echo {0} > /network-data/allocs-{1}.json".format(json.encode(chain.network_params.additional_preloaded_contracts), chain.network_params.network_id),
+                "jq -r '.opChainDeployments[{1}].allocs' /network-data/state.json > /network-data/state-raw-allocs-{0}.json".format(chain.network_params.network_id, idx),
+                "jq -r '.opChainDeployments[{1}].allocs' /network-data/state.json | base64 --decode | gunzip | jq '.' > /network-data/state-allocs-{0}.json".format(chain.network_params.network_id, idx),
+                "jq --slurpfile allocs /network-data/allocs-{0}.json '. = (. + $allocs[0])' /network-data/state-allocs-{0}.json > /network-data/merged-{0}.json".format(chain.network_params.network_id),
+                "cat /network-data/merged-{0}.json | gzip | base64 -w 0 > /network-data/merged-{0}.json.gz.b64".format(chain.network_params.network_id),
+                "cp  /network-data/state.json /network-data/state.json.bak",
+                "jq --rawfile allocs /network-data/merged-{0}.json.gz.b64 '.opChainDeployments[{1}].allocs = $allocs' /network-data/state.json.bak > /network-data/state.json".format(chain.network_params.network_id, idx),
+            ]
+            plan.run_sh(
+                name="op-deployer-generate-allocs",
+                description="Generate allocs for preloaded contracts",
+                image=utils.DEPLOYMENT_UTILS_IMAGE,
+                store=[
+                    StoreSpec(
+                        src="/network-data",
+                        name="op-deployer-configs",
+                    )
+                ],
+                files={
+                    "/network-data": op_deployer_configure.files_artifacts[0],
+                },
+                run=" ; ".join(alloc_cmds)
+            )
+            idx += 1
 
     op_deployer_output = plan.run_sh(
         name="op-deployer-apply",

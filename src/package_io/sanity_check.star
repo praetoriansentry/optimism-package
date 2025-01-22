@@ -72,6 +72,7 @@ SUBCATEGORY_PARAMS = {
         "isthmus_time_offset",
         "interop_time_offset",
         "fund_dev_accounts",
+        "additional_preloaded_contracts",
     ],
     "batcher_params": ["image", "extra_params"],
     "challenger_params": [
