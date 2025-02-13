@@ -265,7 +265,13 @@ def deploy_contracts(
                 "/network-data": op_deployer_output.files_artifacts[0],
                 "/fund-script": fund_script_artifact,
             },
-            run='jq --from-file /fund-script/gen2spec.jq < "/network-data/genesis-$CHAIN_ID.json" > "/network-data/chainspec-$CHAIN_ID.json"',
+            run=" && ".join([
+                'jq --from-file /fund-script/gen2spec.jq < "/network-data/genesis-$CHAIN_ID.json" > "/network-data/chainspec-$CHAIN_ID.json"',
+                "jq '.seq_window_size = {0}' /network-data/rollup-$CHAIN_ID.json > /tmp/ru; mv /tmp/ru /network-data/rollup-$CHAIN_ID.json".format(
+                    chain.network_params.seq_window_size
+                ),
+            ])
+
         )
 
     return op_deployer_output.files_artifacts[0]

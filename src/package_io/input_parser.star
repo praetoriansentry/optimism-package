@@ -199,6 +199,7 @@ def input_parser(plan, input_args):
                     isthmus_time_offset=result["network_params"]["isthmus_time_offset"],
                     interop_time_offset=result["network_params"]["interop_time_offset"],
                     fund_dev_accounts=result["network_params"]["fund_dev_accounts"],
+                    seq_window_size=result["network_params"]["seq_window_size"],
                 ),
                 batcher_params=struct(
                     image=result["batcher_params"]["image"],
@@ -512,6 +513,7 @@ def default_network_params():
         "isthmus_time_offset": None,
         "interop_time_offset": None,
         "fund_dev_accounts": True,
+        "seq_window_size": 3600,
     }
 
 
